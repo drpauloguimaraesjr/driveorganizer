@@ -91,3 +91,19 @@ export interface SearchResponse {
     excerpt?: string;
   }>;
 }
+
+export interface DriveFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  modifiedTime?: string;
+}
+
+export interface ProcessingStatus {
+  fileId: string;
+  fileName: string;
+  status: 'pending' | 'downloading' | 'uploading' | 'generating_metadata' | 'renaming' | 'completed' | 'error';
+  error?: string;
+  metadata?: DocumentMetadata;
+  newFileName?: string;
+}

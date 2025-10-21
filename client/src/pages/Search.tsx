@@ -6,6 +6,7 @@ import { DetailedResultCard, DetailedSearchResult } from "@/components/DetailedR
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
@@ -98,14 +99,17 @@ export default function Search() {
     <div className="min-h-screen bg-background">
       <header className="border-b sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary text-primary-foreground">
-              <FileText className="h-6 w-6" />
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary text-primary-foreground">
+                <FileText className="h-6 w-6" />
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold">Document Search</h1>
+                <p className="text-xs text-muted-foreground">AI-Powered Research</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-semibold">Document Search</h1>
-              <p className="text-xs text-muted-foreground">AI-Powered Research Assistant</p>
-            </div>
+            <Navigation />
           </div>
           <ThemeToggle />
         </div>
