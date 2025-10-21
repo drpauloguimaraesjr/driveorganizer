@@ -312,12 +312,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const content = textContent && textContent.type === "text" ? textContent.text.value : "Nenhum resultado encontrado.";
 
+      // Get all processed documents with metadata
+      const allDocs = await storage.getAllDocuments();
+      const sources = allDocs
+        .filter(doc => doc.metadata)
+        .map(doc => ({
+          metadata: doc.metadata,
+          excerpt: `${doc.renamedFileName || doc.originalFileName}`,
+        }));
+
       await client.beta.assistants.del(assistant.id);
       await client.beta.threads.del(thread.id);
 
       const searchResponse: SearchResponse = {
         content,
-        sources: [],
+        sources,
       };
 
       res.json(searchResponse);
