@@ -6,10 +6,20 @@ import OpenAI from "openai";
 import { getUncachableGoogleDriveClient } from "./google-drive";
 import { Readable } from "stream";
 
+console.log("Initializing OpenAI client...");
+console.log("API Key exists:", !!process.env.AI_INTEGRATIONS_OPENAI_API_KEY);
+console.log("Base URL:", process.env.AI_INTEGRATIONS_OPENAI_BASE_URL);
+
 const client = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
+
+console.log("OpenAI client initialized");
+console.log("Client type:", typeof client);
+console.log("Client has beta:", !!client.beta);
+console.log("Client beta type:", typeof client.beta);
+console.log("Client beta.vectorStores:", !!client?.beta?.vectorStores);
 
 let VECTOR_STORE_ID: string | undefined;
 
@@ -54,7 +64,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create or get vector store
   app.post("/api/vector-store/init", async (req, res) => {
     try {
+      console.log("Vector store init request - current ID:", VECTOR_STORE_ID);
+      console.log("OpenAI client configured:", !!client);
+      console.log("OpenAI client beta:", !!client?.beta);
+      console.log("OpenAI client beta.vectorStores:", !!client?.beta?.vectorStores);
+      
       if (!VECTOR_STORE_ID) {
+        if (!client?.beta?.vectorStores) {
+          throw new Error("OpenAI client not properly initialized. Beta API unavailable.");
+        }
+        
         const vectorStore = await client.beta.vectorStores.create({
           name: "meus-artigos-medicos",
         });
@@ -68,6 +87,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ vectorStoreId: VECTOR_STORE_ID });
     } catch (error: any) {
       console.error("Vector store init error:", error);
+      console.error("Error stack:", error.stack);
       res.status(500).json({ error: "Failed to initialize vector store", message: error.message });
     }
   });
