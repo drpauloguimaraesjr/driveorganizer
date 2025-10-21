@@ -11,10 +11,16 @@ const client = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
-let VECTOR_STORE_ID = process.env.VECTOR_STORE_ID;
+let VECTOR_STORE_ID: string | undefined;
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // List PDFs from Google Drive
+  // Load vector store ID from database on startup
+  const existingVectorStore = await storage.getVectorStore();
+  if (existingVectorStore) {
+    VECTOR_STORE_ID = existingVectorStore.id;
+    console.log("Loaded vector store from database:", VECTOR_STORE_ID);
+  }
+  // List PDFs from Google Drive with processing status
   app.get("/api/drive/pdfs", async (req, res) => {
     try {
       const drive = await getUncachableGoogleDriveClient();
@@ -25,11 +31,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fields: "files(id,name,mimeType,modifiedTime)",
       });
 
-      const files: DriveFile[] = response.data.files?.map(file => ({
+      // Get all processed documents from database
+      const processedDocs = await storage.getAllDocuments();
+      const processedMap = new Map(processedDocs.map(doc => [doc.driveFileId, doc]));
+
+      const files = response.data.files?.map(file => ({
         id: file.id!,
         name: file.name!,
         mimeType: file.mimeType!,
         modifiedTime: file.modifiedTime || undefined,
+        processed: processedMap.has(file.id!),
+        metadata: processedMap.get(file.id!)?.metadata,
       })) || [];
 
       res.json({ files });
@@ -47,7 +59,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: "meus-artigos-medicos",
         });
         VECTOR_STORE_ID = vectorStore.id;
-        console.log("Created new vector store:", VECTOR_STORE_ID);
+        
+        // Persist to database
+        await storage.createVectorStore({ id: VECTOR_STORE_ID });
+        console.log("Created new vector store and saved to database:", VECTOR_STORE_ID);
       }
 
       res.json({ vectorStoreId: VECTOR_STORE_ID });
@@ -84,6 +99,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: "meus-artigos-medicos",
         });
         VECTOR_STORE_ID = vectorStore.id;
+        await storage.createVectorStore({ id: VECTOR_STORE_ID });
       }
 
       // Step 4: Upload to vector store
@@ -204,6 +220,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: newFileName,
         },
       });
+
+      // Step 8: Save metadata to database
+      const existingDoc = await storage.getDocument(fileId);
+      if (existingDoc) {
+        await storage.updateDocument(fileId, {
+          renamedFileName: newFileName,
+          vectorStoreFileId: file.id,
+          metadata: metadata,
+        });
+      } else {
+        await storage.createDocument({
+          driveFileId: fileId,
+          originalFileName: fileName,
+          renamedFileName: newFileName,
+          vectorStoreFileId: file.id,
+          metadata: metadata,
+        });
+      }
 
       // Cleanup
       await client.beta.assistants.del(assistant.id);

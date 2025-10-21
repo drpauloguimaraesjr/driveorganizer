@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -16,6 +16,36 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export const vectorStores = pgTable("vector_stores", {
+  id: varchar("id").primaryKey(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertVectorStoreSchema = createInsertSchema(vectorStores).pick({
+  id: true,
+});
+
+export type InsertVectorStore = z.infer<typeof insertVectorStoreSchema>;
+export type VectorStore = typeof vectorStores.$inferSelect;
+
+export const documents = pgTable("documents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  driveFileId: text("drive_file_id").notNull().unique(),
+  originalFileName: text("original_file_name").notNull(),
+  renamedFileName: text("renamed_file_name"),
+  vectorStoreFileId: text("vector_store_file_id"),
+  metadata: jsonb("metadata"),
+  processedAt: timestamp("processed_at").notNull().defaultNow(),
+});
+
+export const insertDocumentSchema = createInsertSchema(documents).omit({
+  id: true,
+  processedAt: true,
+});
+
+export type InsertDocument = z.infer<typeof insertDocumentSchema>;
+export type Document = typeof documents.$inferSelect;
 
 export const studyTypeEnum = [
   "RCT",
@@ -97,6 +127,8 @@ export interface DriveFile {
   name: string;
   mimeType: string;
   modifiedTime?: string;
+  processed?: boolean;
+  metadata?: any;
 }
 
 export interface ProcessingStatus {
