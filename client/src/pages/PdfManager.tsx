@@ -167,13 +167,34 @@ export default function PdfManager() {
                         <FileText className="h-5 w-5" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold truncate" data-testid={`file-name-${file.id}`}>
-                          {file.name}
-                        </h3>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold truncate" data-testid={`file-name-${file.id}`}>
+                            {file.name}
+                          </h3>
+                          {file.processed && (
+                            <Badge variant="default" className="gap-1 flex-shrink-0">
+                              <CheckCircle2 className="h-3 w-3" />
+                              Processado
+                            </Badge>
+                          )}
+                        </div>
                         {file.modifiedTime && (
                           <p className="text-sm text-muted-foreground">
                             Modificado: {new Date(file.modifiedTime).toLocaleDateString("pt-BR")}
                           </p>
+                        )}
+                        {file.processed && file.metadata?.identificacao && (
+                          <div className="mt-2 text-sm text-muted-foreground">
+                            <p className="line-clamp-1">
+                              {file.metadata.identificacao.titulo} ({file.metadata.identificacao.ano})
+                            </p>
+                            {file.metadata.identificacao.autores && file.metadata.identificacao.autores.length > 0 && (
+                              <p className="line-clamp-1">
+                                {file.metadata.identificacao.autores.slice(0, 3).join(", ")}
+                                {file.metadata.identificacao.autores.length > 3 && " et al."}
+                              </p>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -182,6 +203,11 @@ export default function PdfManager() {
                         <Badge variant="secondary" className="gap-1">
                           <Loader2 className="h-3 w-3 animate-spin" />
                           Processando...
+                        </Badge>
+                      ) : file.processed ? (
+                        <Badge variant="outline" className="gap-1">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Completo
                         </Badge>
                       ) : (
                         <Button
